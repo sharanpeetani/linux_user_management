@@ -1,0 +1,40 @@
+---
+- name: create users from csv file
+  hosts: all
+  become: yes
+
+  tasks:
+
+  - name: reading the csv file
+    read_csv:
+      path: user_lists.csv
+    register: user_info_csv
+    become: no
+    delegate_to: localhost
+
+  - name: display user_info_csv data
+    debug:
+      var: user_info_csv.list
+
+  - name: extract Username from all dictionaries
+    debug:
+      msg: "{{ item.Username }}"
+    loop: "{{ user_info_csv.list }}"
+
+  - name: Create groups from the csv
+    group:
+      name: "{{ item.Groups }}"
+      state: present
+    loop: "{{ user_info_csv.list }}"
+
+  - name: create users from the csv
+    user:
+      name: "{{ item.Username }}"
+      uid: "{{ item.UID }}"
+      groups: "{{ item.Groups }}"
+      append: true
+      password: "{{ item.Password | password_hash('sha512') }}"
+      update_password: on_create
+      comment: "{{ item.First_Name }} {{ item.Last_Name }}"
+      state: present
+    loop: "{{ user_info_csv.list }}"

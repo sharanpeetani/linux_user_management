@@ -1,0 +1,60 @@
+---
+- hosts: all
+  become: yes
+
+  vars_files:
+  - user_variable.yml
+
+  tasks:
+
+  - name: Get all current group(s) information
+    getent:
+      database: group
+      split: ':'
+      fail_key: no
+
+  - name: Create group
+    group:
+      name: "{{ item.name }}"
+      gid: "{{ item.id }}"
+      state: present
+    loop: "{{ add_user }}"
+    when: item.name not in getent_group
+
+  - name: Get all current user(s) information
+    getent:
+      database: passwd
+      split: ':'
+      fail_key: no
+
+  - name: Create user
+    user:
+      name: "{{ item.name }}"
+      uid: "{{ item.id }}"
+      group: "{{ item.name }}"
+      groups: "{{ item.groups }}"
+      comment: "{{ item.comment }}"
+      shell: "{{ item.shell }}"
+      password: "{{ item.password | password_hash('sha512') }}"
+      state: present
+      update_password: on_create
+    loop: "{{ add_user }}"
+    when: item.name not in getent_passwd
+
+  - name: Create ssh directory
+    file:
+      path: "/home/{{ item.name }}/.ssh"
+      state: directory
+      owner: "{{ item.name }}"
+      group: "{{ item.name }}"
+      mode: '0700'
+    loop: "{{ add_user }}"
+
+  - name: copy public key to remote host
+    copy:
+      src: "ssh_keys.pub"
+      dest: "/home/{{ item.name }}/.ssh/authorized_keys"
+      owner: "{{ item.name }}"
+      group: "{{ item.name }}"
+      mode: '0600'
+    loop: "{{ add_user }}"

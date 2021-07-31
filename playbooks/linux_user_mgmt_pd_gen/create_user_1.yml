@@ -1,0 +1,41 @@
+- name: Create users and save pd in pwd
+  hosts: all
+  gather_facts: no
+  become: yes
+  vars:
+    users:
+      - name: user01
+        first: first
+        middle: user
+        last: name
+        uid: 1003
+      - name: user02
+        first: second
+        middle: user
+        last: name
+        uid: 1007
+      - name: user03
+        first: third
+        middle: user
+        last: name
+        uid: 1009
+
+  tasks:
+    
+  - name: Create user on target nodes
+    vars:
+      password: "{{ lookup('password', 'password-' + item.name + ' length=12 chars=digits') }}"
+    user:
+      name: "{{ item.name }}"
+      uid: "{{ item.uid }}"
+      comment: "{{ item.first | capitalize }} {{ item.middle | capitalize }} {{ item.last | capitalize }}"
+      password: "{{ password | password_hash('sha512') }}"
+      update_password: on_create
+      state: present
+    loop: "{{ users }}"
+    register: create_status
+
+  - name: User first login change
+    command: chage -d0 "{{ item.name }}"
+    loop: "{{ users }}"
+    when: create_status is changed

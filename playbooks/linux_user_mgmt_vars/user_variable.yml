@@ -1,0 +1,16 @@
+---
+add_user:
+
+  - name: 'user01'
+    id: '5001'
+    password: 'password123'
+    groups: 'sudo'
+    shell: '/bin/bash'
+    comment: 'Demo users'
+
+  - name: 'user02'
+    id: '5002'
+    password: 'password123'
+    groups: 'sudo'
+    shell: '/bin/sh'
+    comment: 'Demo users'

@@ -1,0 +1,64 @@
+---
+- hosts: all
+  gather_facts: false
+  vars:
+    server_list:
+      - server_name: ubuntu.lab.com
+        account:
+          - account_name: account1
+            account_password: password123
+  tasks:
+
+  - name: Collect account information
+    shell: getent passwd | awk -F":" '{print $1}'
+    register: accounts_list
+    ignore_errors: yes
+    failed_when: false
+
+  - name: Confirm account exists
+    debug:
+      msg: "Account {{ item.1.account_name }} doesn't exist on {{ inventory_hostname }}"
+    when:
+      - item.1.account_name not in accounts_list.stdout_lines
+      - inventory_hostname==item.0.server_name
+    with_subelements:
+      - "{{ server_list }}"
+      - account
+    ignore_errors: yes
+
+  - name: Check account status and failed logins
+    shell: passwd -S "{{ item.1.account_name }}" | awk '{print $2}'
+    register: output
+    when:
+      - item.1.account_name in accounts_list.stdout_lines
+      - inventory_hostname==item.0.server_name
+    with_subelements:
+      - "{{ server_list }}"
+      - account
+    ignore_errors: yes
+
+  - name: Clear failed logins and unlock account
+    shell: |
+       pam_tally2 --user "{{ item.1.account_name }}" --reset
+       passwd -u "{{ item.1.account_name }}"
+    when:
+      - (output.results|map(attribute='stdout')|list) == "P"
+      - item.1.account_name in accounts_list.stdout_lines
+      - inventory_hostname==item.0.server_name
+    with_subelements:
+      - "{{ server_list }}"
+      - account
+    ignore_errors: true
+
+  - name: Change account password
+    user:
+      name: "{{ item.1.account_name }}"
+      password: "{{ item.1.account_password | password_hash('sha512') }}"
+      update_password: always
+    with_subelements:
+      - "{{ server_list }}"
+      - account
+    when:
+      - (output.results|map(attribute='stdout')|list) != "P"
+      - item.1.account_name in accounts_list.stdout_lines
+      - inventory_hostname==item.0.server_name

@@ -1,0 +1,20 @@
+---
+- name: Create New Users
+  hosts: all
+  become: true
+  gather_facts: false
+
+  vars_files:
+    - my_vault.yml
+
+  tasks:
+  - name: Create Users
+    user:
+      name: "{{ item }}"
+      password: "{{ my_password | password_hash('sha512') }}"
+      shell: /bin/bash
+      state: present
+      update_password: always
+    loop:
+      - user03
+      - user04

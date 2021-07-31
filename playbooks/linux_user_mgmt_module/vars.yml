@@ -1,0 +1,42 @@
+user_ssh_key_file: '.ssh/id_rsa'
+user_append: no
+user_createhome: yes
+user_force: no
+user_generate_ssh_key: no
+user_move_home: no
+user_none_unique: no
+user_remove: no
+user_shell: '/bin/bash'
+user_ssh_key_bits: 4096
+user_system: no
+user_update_password: always
+
+user_list:
+  
+  - name: user1
+    uid: 1008
+    comment: "User 1"
+    createhome: yes
+    generate_ssh_key: yes
+    groups:
+      - group1
+      - group2
+      - sudo
+    home: "/home/user1"
+    shell: "/bin/bash"
+    ssh_key_bits: 2048
+    ssh_key_file: '.ssh/id_rsa'
+    state: absent
+    system: no
+    update_password: on_create
+
+  - name: user2
+    uid: 1009
+    state: absent
+    groups:
+      - test
+      - sudo
+
+  - name: user3
+    uid: 1010
+    state: absent
